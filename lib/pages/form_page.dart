@@ -1,288 +1,267 @@
+// lib/pages/biodata_form.dart
 import 'package:flutter/material.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:projek_4/widgets/custom_textfield.dart';
-import 'result_page.dart';
+import 'package:projek_4/pages/result_page.dart';
+import 'package:projek_4/supabase_service.dart';
 
-class FormPage extends StatefulWidget {
-  const FormPage({super.key});
-
+class BiodataFormPage extends StatefulWidget {
+  const BiodataFormPage({super.key});
   @override
-  State<FormPage> createState() => _FormPageState();
+  State<BiodataFormPage> createState() => _BiodataFormPageState();
 }
 
-class _FormPageState extends State<FormPage> {
+class _BiodataFormPageState extends State<BiodataFormPage> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controller
+  // Data diri
   final nisnController = TextEditingController();
   final namaController = TextEditingController();
-  final nikController = TextEditingController();
-  final telpController = TextEditingController();
+  String? selectedGender;
+  String? selectedAgama;
   final ttlController = TextEditingController();
+  final hpController = TextEditingController();
+  final nikController = TextEditingController();
 
+  // Alamat
   final jalanController = TextEditingController();
   final rtRwController = TextEditingController();
   final dusunController = TextEditingController();
+  final desaController = TextEditingController();
   final kecamatanController = TextEditingController();
   final kabupatenController = TextEditingController();
-  final provinsiController = TextEditingController();
+  final provinsiController = TextEditingController(text: 'Jawa Timur');
   final kodePosController = TextEditingController();
 
+  // Orang tua/wali
   final ayahController = TextEditingController();
   final ibuController = TextEditingController();
   final waliController = TextEditingController();
   final alamatWaliController = TextEditingController();
 
-  String? selectedGender;
-  String? selectedAgama;
+  List<String> dusunList = [];
+  bool loadingDusun = false;
 
-  Future<void> _pickDate() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      firstDate: DateTime(1970),
-      lastDate: DateTime.now(),
-      initialDate: DateTime(2005),
-    );
-
-    if (picked != null) {
-      setState(() {
-        ttlController.text =
-            "${picked.day}-${picked.month}-${picked.year}";
-      });
-    }
+  @override
+  void initState() {
+    super.initState();
+    _loadDusunSafe();
   }
 
-  Widget _buildSection(String title, List<Widget> children) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 14),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 4))
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title,
-              style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.indigo)),
-          const SizedBox(height: 8),
-          const Divider(),
-          ...children,
-        ],
-      ),
+  Future<bool> _hasInternet() async {
+    final c = await Connectivity().checkConnectivity();
+    return c != ConnectivityResult.none;
+  }
+
+  Future<void> _loadDusunSafe() async {
+    setState(() => loadingDusun = true);
+
+    if (!await _hasInternet()) {
+      _showSnack('Tidak ada koneksi internet', isError: true);
+      setState(() => loadingDusun = false);
+      return;
+    }
+
+    final list = await SupabaseService.getAllDusun();
+    setState(() {
+      dusunList = list;
+      loadingDusun = false;
+    });
+  }
+
+  Future<void> _onDusunSelected(String dusun) async {
+    // cek koneksi
+    if (!await _hasInternet()) {
+      _showSnack('Tidak ada koneksi internet', isError: true);
+      return;
+    }
+
+    final data = await SupabaseService.getAlamatByDusun(dusun);
+    if (data == null) {
+      _showSnack('Data alamat tidak ditemukan untuk "$dusun"', isError: true);
+      return;
+    }
+
+    setState(() {
+      dusunController.text = data['dusun']?.toString() ?? '';
+      desaController.text = data['desa']?.toString() ?? '';
+      kecamatanController.text = data['kecamatan']?.toString() ?? '';
+      kabupatenController.text = data['kabupaten']?.toString() ?? '';
+      kodePosController.text = data['kode_pos']?.toString() ?? '';
+    });
+  }
+
+  void _showSnack(String msg, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: isError ? Colors.red : Colors.green),
     );
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: Column(
-        children: [
-          // Header dengan gradient
-          Container(
-            height: 150,
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.indigo, Colors.deepPurple],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(40),
-                bottomRight: Radius.circular(40),
-              ),
-            ),
-            child: Center(
-              child: Text("Formulir Biodata",
-                  style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold)),
-            ),
-          ),
+  void dispose() {
+    nisnController.dispose();
+    namaController.dispose();
+    ttlController.dispose();
+    hpController.dispose();
+    nikController.dispose();
 
-          // Body Form
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(18),
+    jalanController.dispose();
+    rtRwController.dispose();
+    dusunController.dispose();
+    desaController.dispose();
+    kecamatanController.dispose();
+    kabupatenController.dispose();
+    kodePosController.dispose();
+    provinsiController.dispose();
+
+    ayahController.dispose();
+    ibuController.dispose();
+    waliController.dispose();
+    alamatWaliController.dispose();
+
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // main scaffold & form layout (match screenshot styling)
+    return Scaffold(
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // header
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 28),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [Color(0xFF5B2DF9), Color(0xFF6F5CE8)]),
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+              ),
+              child: Center(
+                child: Text('Formulir Biodata',
+                    style: GoogleFonts.poppins(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.all(16.0),
               child: Form(
                 key: _formKey,
-                child: Column(
-                  children: [
-                    _buildSection("Data Diri", [
-                      CustomTextField(
-                          label: "NISN",
-                          controller: nisnController,
-                          type: TextInputType.number,
-                          icon: Icons.badge),
-                      CustomTextField(
-                          label: "Nama Lengkap",
-                          controller: namaController,
-                          type: TextInputType.text,
-                          icon: Icons.person),
-                      DropdownButtonFormField<String>(
-                        decoration: InputDecoration(
-                          border: const OutlineInputBorder(),
-                          labelText: "Jenis Kelamin",
-                          prefixIcon: const Icon(Icons.wc,
-                              color: Color.fromARGB(255, 132, 53, 229)), // merah
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  // Data Diri card
+                  Card(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 3,
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text('Data Diri', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.blue)),
+                        const SizedBox(height: 8),
+                        _iconField('NISN', nisnController, Icons.badge),
+                        _iconField('Nama Lengkap', namaController, Icons.person),
+                        _dropdownField('Jenis Kelamin', ['Laki-laki', 'Perempuan'], selectedGender, (v) => setState(() => selectedGender = v), Icons.wc),
+                        _dropdownField('Agama', ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Budha'], selectedAgama, (v) => setState(() => selectedAgama = v), Icons.church),
+                        _iconField('Tanggal Lahir', ttlController, Icons.calendar_today),
+                        _iconField('No. HP', hpController, Icons.phone),
+                        _iconField('NIK', nikController, Icons.credit_card),
+                      ]),
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Alamat card
+                  Card(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 3,
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text('Alamat', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.blue)),
+                        const SizedBox(height: 8),
+                        _iconField('Jalan', jalanController, Icons.home),
+                        _iconField('RT / RW', rtRwController, Icons.format_list_numbered),
+                        // Autocomplete
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: loadingDusun
+                              ? const LinearProgressIndicator()
+                              : Autocomplete<String>(
+                                  optionsBuilder: (TextEditingValue textEditingValue) {
+                                    if (textEditingValue.text.isEmpty) return const Iterable<String>.empty();
+                                    return dusunList.where((d) => d.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+                                  },
+                                  onSelected: (val) => _onDusunSelected(val),
+                                  fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                                    return TextFormField(
+                                      controller: controller,
+                                      focusNode: focusNode,
+                                      decoration: InputDecoration(
+                                        labelText: 'Dusun',
+                                        prefixIcon: const Icon(Icons.account_tree, color: Color(0xFF7C4DFF)),
+                                        filled: true,
+                                        fillColor: Colors.grey.shade100,
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                                      ),
+                                    );
+                                  },
+                                ),
                         ),
-                        value: selectedGender,
-                        items: ["Laki-laki", "Perempuan"]
-                            .map((g) => DropdownMenuItem(
-                                  value: g,
-                                  child: Text(g),
-                                ))
-                            .toList(),
-                        onChanged: (val) =>
-                            setState(() => selectedGender = val),
-                      ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
-                        decoration: InputDecoration(
-                          border: const OutlineInputBorder(),
-                          labelText: "Agama",
-                          prefixIcon: const Icon(Icons.church,
-                              color: Color.fromARGB(255, 132, 53, 229)), // merah
-                        ),
-                        value: selectedAgama,
-                        items: [
-                          "Islam",
-                          "Kristen",
-                          "Katolik",
-                          "Hindu",
-                          "Budha",
-                          "Konghucu"
-                        ]
-                            .map((a) => DropdownMenuItem(
-                                  value: a,
-                                  child: Text(a),
-                                ))
-                            .toList(),
-                        onChanged: (val) =>
-                            setState(() => selectedAgama = val),
-                      ),
-                      GestureDetector(
-                        onTap: _pickDate,
-                        child: AbsorbPointer(
-                          child: CustomTextField(
-                              label: "Tanggal Lahir",
-                              controller: ttlController,
-                              type: TextInputType.text,
-                              icon: Icons.calendar_today),
-                        ),
-                      ),
-                      CustomTextField(
-                          label: "No. HP",
-                          controller: telpController,
-                          type: TextInputType.phone,
-                          icon: Icons.phone),
-                      CustomTextField(
-                          label: "NIK",
-                          controller: nikController,
-                          type: TextInputType.number,
-                          icon: Icons.credit_card),
-                    ]),
+                        _readOnlyIconField('Desa', desaController, Icons.location_city),
+                        _readOnlyIconField('Kecamatan', kecamatanController, Icons.map),
+                        _readOnlyIconField('Kabupaten', kabupatenController, Icons.apartment),
+                        _readOnlyIconField('Provinsi', provinsiController, Icons.flag),
+                        _readOnlyIconField('Kode Pos', kodePosController, Icons.markunread_mailbox),
+                      ]),
+                    ),
+                  ),
 
-                    _buildSection("Alamat", [
-                      CustomTextField(
-                          label: "Jalan",
-                          controller: jalanController,
-                          type: TextInputType.text,
-                          icon: Icons.home),
-                      CustomTextField(
-                          label: "RT / RW",
-                          controller: rtRwController,
-                          type: TextInputType.text,
-                          icon: Icons.map),
-                      CustomTextField(
-                          label: "Dusun",
-                          controller: dusunController,
-                          type: TextInputType.text,
-                          icon: Icons.location_city),
-                      CustomTextField(
-                          label: "Kecamatan",
-                          controller: kecamatanController,
-                          type: TextInputType.text,
-                          icon: Icons.apartment),
-                      CustomTextField(
-                          label: "Kabupaten",
-                          controller: kabupatenController,
-                          type: TextInputType.text,
-                          icon: Icons.business),
-                      CustomTextField(
-                          label: "Provinsi",
-                          controller: provinsiController,
-                          type: TextInputType.text,
-                          icon: Icons.flag),
-                      CustomTextField(
-                          label: "Kode Pos",
-                          controller: kodePosController,
-                          type: TextInputType.number,
-                          icon: Icons.markunread_mailbox),
-                    ]),
+                  const SizedBox(height: 14),
 
-                    _buildSection("Orang Tua / Wali", [
-                      CustomTextField(
-                          label: "Nama Ayah",
-                          controller: ayahController,
-                          type: TextInputType.text,
-                          icon: Icons.male),
-                      CustomTextField(
-                          label: "Nama Ibu",
-                          controller: ibuController,
-                          type: TextInputType.text,
-                          icon: Icons.female),
-                      CustomTextField(
-                          label: "Nama Wali",
-                          controller: waliController,
-                          type: TextInputType.text,
-                          icon: Icons.person_outline),
-                      CustomTextField(
-                          label: "Alamat Wali",
-                          controller: alamatWaliController,
-                          type: TextInputType.text,
-                          icon: Icons.location_on),
-                    ]),
+                  // Orang Tua / Wali card
+                  Card(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 3,
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text('Orang Tua / Wali', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.blue)),
+                        const SizedBox(height: 8),
+                        _iconField('Nama Ayah', ayahController, Icons.male),
+                        _iconField('Nama Ibu', ibuController, Icons.female),
+                        _iconField('Nama Wali', waliController, Icons.people),
+                        _iconField('Alamat Wali', alamatWaliController, Icons.location_on),
+                      ]),
+                    ),
+                  ),
 
-                    const SizedBox(height: 24),
+                  const SizedBox(height: 18),
 
-                    // Tombol Simpan
-                    ElevatedButton(
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.indigo,
-                        minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                        elevation: 4,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: const Color(0xFF5B2DF9),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => ResultPage(
+                              builder: (_) => ResultPage(
                                 nisn: nisnController.text,
                                 nama: namaController.text,
+                                jenisKelamin: selectedGender ?? '',
+                                agama: selectedAgama ?? '',
+                                tglLahir: ttlController.text,
+                                hp: hpController.text,
                                 nik: nikController.text,
-                                telp: telpController.text,
-                                ttl: ttlController.text,
-                                gender: selectedGender ?? "",
-                                agama: selectedAgama ?? "",
                                 jalan: jalanController.text,
                                 rtRw: rtRwController.text,
                                 dusun: dusunController.text,
+                                desa: desaController.text,
                                 kecamatan: kecamatanController.text,
                                 kabupaten: kabupatenController.text,
                                 provinsi: provinsiController.text,
@@ -296,19 +275,61 @@ class _FormPageState extends State<FormPage> {
                           );
                         }
                       },
-                      child: Text("Simpan & Lihat Hasil",
-                          style: GoogleFonts.poppins(
-                              fontSize: 16, fontWeight: FontWeight.w600,color: Color.fromARGB(255, 0, 0, 0)
-                              )
-                              ),
+                      child: Text('Simpan & Lihat Hasil', style: GoogleFonts.poppins(color: Colors.white, fontSize: 16)),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 20),
+                ]),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+
+  Widget _iconField(String label, TextEditingController c, IconData icon) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: TextFormField(
+          controller: c,
+          decoration: InputDecoration(
+            labelText: label,
+            prefixIcon: Icon(icon, color: const Color(0xFF7C4DFF)),
+            filled: true,
+            fillColor: Colors.grey.shade100,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          ),
+        ),
+      );
+
+  Widget _readOnlyIconField(String label, TextEditingController c, IconData icon) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: TextFormField(
+          controller: c,
+          readOnly: true,
+          decoration: InputDecoration(
+            labelText: label,
+            prefixIcon: Icon(icon, color: const Color(0xFF7C4DFF)),
+            filled: true,
+            fillColor: Colors.grey.shade100,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          ),
+        ),
+      );
+
+  Widget _dropdownField(String label, List<String> items, String? value, Function(String?) onChanged, IconData icon) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: DropdownButtonFormField<String>(
+          value: value,
+          decoration: InputDecoration(
+            labelText: label,
+            prefixIcon: Icon(icon, color: const Color(0xFF7C4DFF)),
+            filled: true,
+            fillColor: Colors.grey.shade100,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          ),
+          items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+          onChanged: onChanged,
+        ),
+      );
 }

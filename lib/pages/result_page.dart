@@ -1,22 +1,25 @@
+// lib/result_page.dart
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ResultPage extends StatelessWidget {
-  final String nisn, nama, nik, telp, ttl, gender, agama;
-  final String jalan, rtRw, dusun, kecamatan, kabupaten, provinsi, kodePos;
+  final String nisn, nama, jenisKelamin, agama, tglLahir, hp, nik;
+  final String jalan, rtRw, dusun, desa, kecamatan, kabupaten, provinsi, kodePos;
   final String ayah, ibu, wali, alamatWali;
 
   const ResultPage({
     super.key,
     required this.nisn,
     required this.nama,
-    required this.nik,
-    required this.telp,
-    required this.ttl,
-    required this.gender,
+    required this.jenisKelamin,
     required this.agama,
+    required this.tglLahir,
+    required this.hp,
+    required this.nik,
     required this.jalan,
     required this.rtRw,
     required this.dusun,
+    required this.desa,
     required this.kecamatan,
     required this.kabupaten,
     required this.provinsi,
@@ -27,95 +30,65 @@ class ResultPage extends StatelessWidget {
     required this.alamatWali,
   });
 
-  Widget _buildInfoCard(IconData icon, String title, List<String> details) {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      child: Padding(
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Hasil Biodata', style: GoogleFonts.poppins()),
+        backgroundColor: const Color(0xFF5B2DF9),
+      ),
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              backgroundColor: Colors.indigo.shade100,
-              child: Icon(icon, color: Colors.indigo),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title,
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
-                  const Divider(),
-                  ...details
-                      .map((d) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Text(d,
-                                style: const TextStyle(fontSize: 15)),
-                          ))
-                      .toList(),
-                ],
-              ),
-            ),
-          ],
-        ),
+        child: Column(children: [
+          _cardSection('Data Diri', Icons.person, [
+            'NISN : $nisn',
+            'Nama : $nama',
+            'Jenis Kelamin : $jenisKelamin',
+            'Agama : $agama',
+            'Tanggal Lahir : $tglLahir',
+            'No. HP : $hp',
+            'NIK : $nik',
+          ]),
+          _cardSection('Alamat', Icons.home, [
+            'Jalan : $jalan',
+            'RT/RW : $rtRw',
+            'Dusun : $dusun',
+            'Desa : $desa',
+            'Kecamatan : $kecamatan',
+            'Kabupaten : $kabupaten',
+            'Provinsi : $provinsi',
+            'Kode Pos : $kodePos',
+          ]),
+          _cardSection('Orang Tua / Wali', Icons.group, [
+            'Nama Ayah : $ayah',
+            'Nama Ibu : $ibu',
+            'Nama Wali : $wali',
+            'Alamat Wali : $alamatWali',
+          ]),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back),
+            label: Text('Kembali', style: GoogleFonts.poppins()),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF5B2DF9)),
+          ),
+        ]),
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: const Text("Hasil Biodata"),
-        centerTitle: true,
-        backgroundColor: Colors.indigo,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildInfoCard(Icons.person, "Data Diri", [
-              "NISN : $nisn",
-              "Nama : $nama",
-              "Jenis Kelamin : $gender",
-              "Agama : $agama",
-              "Tanggal Lahir : $ttl",
-              "No. HP : $telp",
-              "NIK : $nik",
-            ]),
-            _buildInfoCard(Icons.home, "Alamat", [
-              "Jalan : $jalan",
-              "RT/RW : $rtRw",
-              "Dusun : $dusun",
-              "Kecamatan : $kecamatan",
-              "Kabupaten : $kabupaten",
-              "Provinsi : $provinsi",
-              "Kode Pos : $kodePos",
-            ]),
-            _buildInfoCard(Icons.family_restroom, "Orang Tua / Wali", [
-              "Nama Ayah : $ayah",
-              "Nama Ibu : $ibu",
-              "Nama Wali : $wali",
-              "Alamat Wali : $alamatWali",
-            ]),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.arrow_back),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.indigo,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              label: const Text("Kembali"),
-            )
-          ],
-        ),
+  Widget _cardSection(String title, IconData icon, List<String> rows) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      elevation: 3,
+      margin: const EdgeInsets.only(bottom: 14),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [Icon(icon, color: const Color(0xFF7C4DFF)), const SizedBox(width: 8), Text(title, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700))]),
+          const Divider(),
+          ...rows.map((r) => Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Text(r, style: GoogleFonts.poppins()))),
+        ]),
       ),
     );
   }

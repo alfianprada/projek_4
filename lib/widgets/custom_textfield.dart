@@ -27,7 +27,7 @@ class CustomTextField extends StatelessWidget {
         style: GoogleFonts.poppins(fontSize: 15),
         decoration: InputDecoration(
           prefixIcon: icon != null
-              ? Icon(icon, color: const Color.fromARGB(255, 132, 53, 229)) // 🔴 merah elegan
+              ? Icon(icon, color: const Color.fromARGB(255, 132, 53, 229)) 
               : null,
           labelText: label,
           labelStyle: GoogleFonts.poppins(color: Colors.grey[700]),
