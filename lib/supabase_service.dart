@@ -1,42 +1,85 @@
-// lib/services/supabase_service.dart
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SupabaseService {
-  static final SupabaseClient client = Supabase.instance.client;
+  static final supabase = Supabase.instance.client;
 
-  /// Ambil daftar unique dusun dari tabel 'alamat'
-  static Future<List<String>> getAllDusun() async {
+// Ambil alamat berdasarkan dusun
+static Future<List<Map<String, dynamic>>> getAlamatByDusun(String query) async {
+  try {
+    final response = await supabase
+        .from('alamat')
+        .select()
+        .ilike('dusun', '%$query%');
+
+    return List<Map<String, dynamic>>.from(response);
+  } catch (e) {
+    print("Error getAlamatByDusun: $e");
+    return [];
+  }
+}
+
+  // 🔹 Insert data siswa
+  static Future<bool> insertSiswa(Map<String, dynamic> data) async {
     try {
-      final response = await client
-          .from('alamat')
-          .select('dusun')
-          .order('dusun', ascending: true);
-      final list = (response as List)
-          .map((e) => (e['dusun'] ?? '').toString())
-          .where((s) => s.isNotEmpty)
-          .toSet()
-          .toList();
-      return list;
+      await supabase.from('siswa').insert(data);
+      return true; // sukses
     } catch (e) {
-      // log error, kembalikan list kosong supaya UI tidak crash
-      print('Supabase getAllDusun error: $e');
+      print("Error insertSiswa: $e");
+      return false; // gagal
+    }
+  }
+
+  // 🔹 Ambil semua siswa
+  static Future<List<Map<String, dynamic>>> getSiswa() async {
+    try {
+      final response = await supabase.from('siswa').select();
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      print("Error getSiswa: $e");
       return [];
     }
   }
 
-  /// Ambil satu record alamat berdasarkan nama dusun
-  static Future<Map<String, dynamic>?> getAlamatByDusun(String dusun) async {
+  // 🔹 Update siswa berdasarkan ID
+  static Future<bool> updateSiswa(int id, Map<String, dynamic> data) async {
     try {
-      final response = await client
-          .from('alamat')
-          .select('dusun, desa, kecamatan, kabupaten, kode_pos')
-          .eq('dusun', dusun)
-          .maybeSingle();
-      if (response == null) return null;
-      return Map<String, dynamic>.from(response);
+      await supabase.from('siswa').update(data).eq('id', id);
+      return true;
     } catch (e) {
-      print('Supabase getAlamatByDusun error: $e');
-      return null;
+      print("Error updateSiswa: $e");
+      return false;
+    }
+  }
+
+  // 🔹 Hapus siswa berdasarkan ID
+  static Future<bool> deleteSiswa(int id) async {
+    try {
+      await supabase.from('siswa').delete().eq('id', id);
+      return true;
+    } catch (e) {
+      print("Error deleteSiswa: $e");
+      return false;
+    }
+  }
+
+  // 🔹 Ambil data alamat (autocomplete)
+  static Future<List<String>> getAlamatSuggestions(String query) async {
+    try {
+      final response = await supabase
+          .from('alamat')
+          .select()
+          .ilike('desa', '%$query%'); // cari desa berdasarkan input user
+
+      final List<Map<String, dynamic>> data =
+          List<Map<String, dynamic>>.from(response);
+
+      return data
+          .map((e) =>
+              "${e['dusun']}, ${e['desa']}, ${e['kecamatan']}, ${e['kabupaten']}, ${e['kode_pos']}")
+          .toList();
+    } catch (e) {
+      print("Error getAlamatSuggestions: $e");
+      return [];
     }
   }
 }
