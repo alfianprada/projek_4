@@ -90,11 +90,71 @@ class _ListPageState extends State<ListPage> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : siswa.isEmpty
-              ? const Center(
-                  child: Text(
-                  "Belum ada data",
-                  style: TextStyle(fontSize: 18, color: Colors.grey),
-                ))
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      AnimatedOpacity(opacity: 1, duration: const Duration(seconds: 2),
+                      child: Icon(
+                        Icons.school_rounded,
+                        size: 90,
+                        color: Colors.deepPurple.shade200,
+                      ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      ShaderMask(
+                        shaderCallback: (bounds) => LinearGradient(
+                          colors: [Colors.deepPurple,Colors.purpleAccent],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                      ).createShader(bounds),
+                      child: const Text(
+                        "Belum ada data siswa",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      ),
+
+                      const SizedBox(height: 10),
+                      Text(
+                        "Yuk tambahkan siswa pertama",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+
+                      const SizedBox(height: 25),
+
+                      ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple,
+                        shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
+                        ),
+                      icon: const Icon(Icons.add, color: Colors.white),
+                      label: const Text(
+                          "Tambah Siswa",
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                       ),
+                     onPressed: () async {
+                      final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const FormPage()),
+                    );
+                    if (result == true) fetchData();
+                  },
+                 ),
+                 ]
+                ),
+                )
               : ListView.builder(
                   padding: const EdgeInsets.all(12),
                   itemCount: siswa.length,
